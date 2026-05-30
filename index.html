@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Katja — Ylioppilas 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #1a0a00;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* ── PROGRESS ── */
+.progress {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 1.2rem;
+}
+.dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(182,145,0,0.4);
+  transition: all 0.4s;
+}
+.dot.active {
+  background: #b69100;
+  box-shadow: 0 0 8px rgba(182,145,0,0.7);
+}
+
+/* ── CARD SCENE ── */
+.card-scene {
+  perspective: 1400px;
+  width: 660px;
+  height: 440px;
+  position: relative;
+}
+
+.card-page {
+  position: absolute;
+  width: 100%; height: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transition: transform 0.95s cubic-bezier(0.77,0,0.175,1), opacity 0.95s ease;
+}
+.card-page.state-current { transform: translateX(0) scale(1);      opacity: 1;  pointer-events: auto; }
+.card-page.state-next    { transform: translateX(112%) scale(0.88); opacity: 0;  pointer-events: none; }
+.card-page.state-prev    { transform: translateX(-112%) scale(0.88);opacity: 0;  pointer-events: none; }
+
+/* ── NAV ── */
+.nav-row {
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+  margin-top: 1.2rem;
+}
+.nav-btn {
+  background: transparent;
+  border: 1px solid rgba(182,145,0,0.35);
+  color: rgba(182,145,0,0.75);
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  padding: 0.55rem 1.6rem;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.3s;
+}
+.nav-btn:hover { background: rgba(182,145,0,0.08); color: #b69100; border-color: rgba(182,145,0,0.6); }
+.nav-btn:disabled { opacity: 0.18; cursor: default; pointer-events: none; }
+.page-label {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.25em;
+  color: rgba(182,145,0,0.35);
+  min-width: 80px;
+  text-align: center;
+}
+
+/* ── CONFETTI ── */
+#confetti-canvas {
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 999;
+}
+
+/* ══════════════════
+   SIVU 1 — YO-LAKKI
+══════════════════ */
+.p1 {
+  width: 100%; height: 100%;
+  background: #0f0800;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 52px;
+  overflow: hidden;
+}
+
+/* Tausta-SVG */
+.p1-bg-svg {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+}
+
+/* Tähdet */
+.particles { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.star {
+  position: absolute; width: 2px; height: 2px;
+  background: #c8a400; border-radius: 50%; opacity: 0;
+  animation: twinkle var(--d) ease-in-out infinite;
+  animation-delay: var(--del);
+}
+
+/* Vasen puoli: teksti */
+.p1-left {
+  position: relative; z-index: 2;
+  display: flex; flex-direction: column; gap: 0.4rem;
+}
+.p1-klass {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 300; font-size: 0.72rem;
+  letter-spacing: 0.45em; text-transform: uppercase;
+  color: rgba(182,145,0,0.6);
+}
+.p1-nimi {
+  font-family: 'Playfair Display', serif;
+  font-style: italic; font-size: 2.8rem;
+  color: #c8a400; line-height: 1;
+  text-shadow: 0 0 40px rgba(182,145,0,0.4);
+}
+.p1-titteli {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 300; font-size: 1.05rem;
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.5);
+  margin-top: 0.2rem;
+}
+.p1-vuosi {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 0.7rem; letter-spacing: 0.45em;
+  color: rgba(255,255,255,0.18);
+  margin-top: 0.8rem; text-transform: uppercase;
+}
+.p1-hint {
+  position: absolute; bottom: 16px; left: 0; right: 0;
+  text-align: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 0.65rem; letter-spacing: 0.22em;
+  color: rgba(255,255,255,0.15);
+  animation: pulse 2.5s ease-in-out infinite;
+}
+
+/* Oikea puoli: lakki */
+.p1-right {
+  position: relative; z-index: 2;
+  display: flex; align-items: center; justify-content: center;
+}
+.lakki-wrap {
+  position: relative;
+  width: 200px; height: 200px;
+  display: flex; align-items: center; justify-content: center;
+}
+.lakki-glow {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(182,145,0,0.18) 0%, transparent 70%);
+  animation: glowPulse 3s ease-in-out infinite;
+}
+.lakki-emoji {
+  font-size: 7rem;
+  filter: drop-shadow(0 0 24px rgba(182,145,0,0.7));
+  animation: float 4s ease-in-out infinite;
+  position: relative; z-index: 1;
+}
+/* Pyörivä rengas lakin ympärillä */
+.lakki-ring {
+  position: absolute; inset: 0;
+  animation: spin 18s linear infinite;
+}
+
+/* ══════════════════
+   SIVU 2 — KUVA
+══════════════════ */
+.p2 {
+  width: 100%; height: 100%;
+  background: #0b0600;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Tausta-abstrakti */
+.p2-bg-svg {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  pointer-events: none; opacity: 0.6;
+}
+
+.photo-frame {
+  position: relative; z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── KUVA: vaihda src="" kohtaan oman kuvasi polku, esim src="kuva.jpg" ── */
+.photo-img {
+  width: 240px;
+  height: 300px;
+  object-fit: cover;
+  object-position: center top;
+  border-radius: 4px;
+  display: block;
+  position: relative;
+  z-index: 3;
+  filter: sepia(15%) contrast(1.05);
+}
+
+/* Placeholder kun kuvaa ei ole */
+.photo-placeholder {
+  width: 240px; height: 300px;
+  border-radius: 4px;
+  background: #1a1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  position: relative; z-index: 3;
+}
+.photo-placeholder span {
+  font-size: 2.5rem;
+  filter: drop-shadow(0 0 10px rgba(182,145,0,0.4));
+}
+.photo-placeholder p {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  color: rgba(182,145,0,0.4);
+  text-align: center;
+  text-transform: uppercase;
+  line-height: 1.7;
+  padding: 0 1rem;
+}
+
+/* SVG-koristekehys kuvan ympärillä */
+.photo-deco {
+  position: absolute; inset: -32px;
+  z-index: 4;
+  pointer-events: none;
+}
+
+/* Tekstit kuvan vieressä */
+.p2-side {
+  position: absolute;
+  z-index: 5;
+}
+.p2-side-left {
+  left: 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.p2-side-right {
+  right: 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.p2-vertical-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 300;
+  font-size: 0.7rem;
+  letter-spacing: 0.35em;
+  color: rgba(182,145,0,0.45);
+  text-transform: uppercase;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+.p2-dot-line {
+  width: 1px; height: 60px;
+  background: linear-gradient(to bottom, transparent, rgba(182,145,0,0.4), transparent);
+}
+.p2-star-deco {
+  font-size: 0.7rem;
+  color: rgba(182,145,0,0.5);
+}
+
+/* Caption kuvan alla */
+.p2-caption {
+  position: absolute;
+  bottom: 20px;
+  left: 0; right: 0;
+  text-align: center;
+  z-index: 5;
+}
+.p2-caption-name {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 1.1rem;
+  color: rgba(182,145,0,0.7);
+  letter-spacing: 0.08em;
+}
+.p2-caption-sub {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 0.68rem;
+  letter-spacing: 0.35em;
+  color: rgba(255,255,255,0.2);
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* ══════════════════
+   SIVU 3 — VIESTI
+══════════════════ */
+.p3 {
+  width: 100%; height: 100%;
+  background: #fdfaf3;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.8rem 3rem;
+  overflow: hidden;
+}
+
+.p3-corner-svg {
+  position: absolute;
+  width: 160px; height: 160px;
+  opacity: 0.1;
+  pointer-events: none;
+}
+.p3-corner-svg.tl { top: 0; left: 0; }
+.p3-corner-svg.tr { top: 0; right: 0; transform: scaleX(-1); }
+.p3-corner-svg.bl { bottom: 0; left: 0; transform: scaleY(-1); }
+.p3-corner-svg.br { bottom: 0; right: 0; transform: scale(-1); }
+
+.p3-border {
+  position: absolute; inset: 10px;
+  border: 1px solid rgba(182,145,0,0.3);
+  border-radius: 8px; pointer-events: none;
+}
+.p3-border::before {
+  content: ''; position: absolute; inset: 6px;
+  border: 1px solid rgba(182,145,0,0.12);
+  border-radius: 5px;
+}
+
+.p3-top-deco {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 0.6rem;
+}
+.p3-top-line {
+  width: 50px; height: 1px;
+  background: linear-gradient(to right, transparent, #b69100);
+}
+.p3-top-line.right {
+  background: linear-gradient(to left, transparent, #b69100);
+}
+.p3-top-icon {
+  font-size: 1.1rem;
+  filter: drop-shadow(0 0 6px rgba(182,145,0,0.5));
+}
+
+.p3-title {
+  font-family: 'Playfair Display', serif;
+  font-style: italic; font-size: 1.5rem;
+  color: #1a1000; text-align: center; line-height: 1.3;
+  position: relative; z-index: 1;
+}
+.p3-divider {
+  width: 50px; height: 1px;
+  background: linear-gradient(to right, transparent, #b69100, transparent);
+  margin: 0.75rem auto;
+}
+.p3-message {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.05rem; color: #3d2e10;
+  text-align: center; line-height: 1.9;
+  position: relative; z-index: 1;
+}
+.p3-sign {
+  font-family: 'Playfair Display', serif;
+  font-style: italic; font-size: 0.88rem;
+  color: #8a6800; letter-spacing: 0.06em;
+  margin-top: 0.5rem;
+  position: relative; z-index: 1;
+}
+
+.wax-seal {
+  position: absolute; bottom: 22px; right: 26px;
+  width: 44px; height: 44px;
+  background: #b69100; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; color: #fdfaf3;
+  box-shadow: 0 2px 18px rgba(182,145,0,0.45);
+  opacity: 0; transform: scale(0.4) rotate(-40deg);
+  transition: opacity 0.5s, transform 0.5s;
+  transition-delay: 0.5s;
+  z-index: 5;
+}
+.wax-seal.visible { opacity: 1; transform: scale(1) rotate(0deg); }
+
+/* ── ANIMAATIOT ── */
+@keyframes float {
+  0%,100% { transform: translateY(0); }
+  50%      { transform: translateY(-12px); }
+}
+@keyframes pulse {
+  0%,100% { opacity: 0.15; }
+  50%      { opacity: 0.4; }
+}
+@keyframes twinkle {
+  0%,100% { opacity: 0; transform: scale(0.4); }
+  50%      { opacity: 1; transform: scale(1.6); }
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes glowPulse {
+  0%,100% { opacity: 0.6; transform: scale(0.95); }
+  50%      { opacity: 1;   transform: scale(1.05); }
+}
+@keyframes shimmerLine {
+  0%   { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -60; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="confetti-canvas"></canvas>
+
+<div class="progress">
+  <div class="dot active" id="dot-0"></div>
+  <div class="dot" id="dot-1"></div>
+  <div class="dot" id="dot-2"></div>
+</div>
+
+<div class="card-scene">
+
+  <!-- ══ SIVU 1 ══ -->
+  <div class="card-page state-current" id="page-0">
+    <div class="p1">
+
+      <!-- Tausta-SVG -->
+      <svg class="p1-bg-svg" viewBox="0 0 660 440" xmlns="http://www.w3.org/2000/svg">
+        <!-- Iso pyörivä ympyräkuvio oikealla -->
+        <circle cx="480" cy="220" r="200" fill="none" stroke="rgba(182,145,0,0.05)" stroke-width="1"/>
+        <circle cx="480" cy="220" r="160" fill="none" stroke="rgba(182,145,0,0.04)" stroke-width="1"/>
+        <circle cx="480" cy="220" r="120" fill="none" stroke="rgba(182,145,0,0.06)" stroke-width="1"/>
+        <!-- Kulmakoristeviivat -->
+        <line x1="0"   y1="0"   x2="100" y2="0"   stroke="rgba(182,145,0,0.2)" stroke-width="0.8"/>
+        <line x1="0"   y1="0"   x2="0"   y2="90"  stroke="rgba(182,145,0,0.2)" stroke-width="0.8"/>
+        <line x1="660" y1="0"   x2="560" y2="0"   stroke="rgba(182,145,0,0.2)" stroke-width="0.8"/>
+        <line x1="660" y1="0"   x2="660" y2="90"  stroke="rgba(182,145,0,0.2)" stroke-width="0.8"/>
+        <line x1="0"   y1="440" x2="100" y2="440" stroke="rgba(182,145,0,0.2)" stroke-width="0.8"/>
+        <line x1="0"   y1="440" x2="0"   y2="350" stroke="rgba(182,145,0,0.2)" stroke-width="0.8"/>
+        <line x1="660" y1="440" x2="560" y2="440" stroke="rgba(182,145,0,0.2)" stroke-width="0.8"/>
+        <line x1="660" y1="440" x2="660" y2="350" stroke="rgba(182,145,0,0.2)" stroke-width="0.8"/>
+        <circle cx="0"   cy="0"   r="3.5" fill="rgba(182,145,0,0.35)"/>
+        <circle cx="660" cy="0"   r="3.5" fill="rgba(182,145,0,0.35)"/>
+        <circle cx="0"   cy="440" r="3.5" fill="rgba(182,145,0,0.35)"/>
+        <circle cx="660" cy="440" r="3.5" fill="rgba(182,145,0,0.35)"/>
+        <!-- Diagonaalit -->
+        <line x1="0"   y1="0"   x2="70"  y2="70"  stroke="rgba(182,145,0,0.07)" stroke-width="0.5"/>
+        <line x1="660" y1="0"   x2="590" y2="70"  stroke="rgba(182,145,0,0.07)" stroke-width="0.5"/>
+        <line x1="0"   y1="440" x2="70"  y2="370" stroke="rgba(182,145,0,0.07)" stroke-width="0.5"/>
+        <line x1="660" y1="440" x2="590" y2="370" stroke="rgba(182,145,0,0.07)" stroke-width="0.5"/>
+        <!-- Erottajaviiva -->
+        <line x1="330" y1="40" x2="330" y2="400" stroke="rgba(182,145,0,0.08)" stroke-width="0.5" stroke-dasharray="4 6"/>
+      </svg>
+
+      <div class="particles" id="particles"></div>
+
+      <!-- Vasen: teksti -->
+      <div class="p1-left">
+        <div class="p1-klass">✦ &nbsp; Ylioppilas &nbsp; ✦</div>
+        <div class="p1-nimi">  Katja</div>
+        <div class="p1-titteli">Ylioppilaaksi 2026</div>
+      </div>
+
+      <!-- Oikea: lakki -->
+      <div class="p1-right">
+        <div class="lakki-wrap">
+          <div class="lakki-glow"></div>
+          <!-- Pyörivä SVG-rengas -->
+          <svg class="lakki-ring" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="100" cy="100" r="90" fill="none" stroke="rgba(182,145,0,0.25)" stroke-width="0.8" stroke-dasharray="5 9"/>
+            <circle cx="100" cy="100" r="76" fill="none" stroke="rgba(182,145,0,0.15)" stroke-width="0.6"/>
+            <g fill="rgba(182,145,0,0.4)">
+              <circle cx="100" cy="10"  r="2.5"/>
+              <circle cx="190" cy="100" r="2.5"/>
+              <circle cx="100" cy="190" r="2.5"/>
+              <circle cx="10"  cy="100" r="2.5"/>
+              <circle cx="164" cy="36"  r="1.8"/>
+              <circle cx="164" cy="164" r="1.8"/>
+              <circle cx="36"  cy="36"  r="1.8"/>
+              <circle cx="36"  cy="164" r="1.8"/>
+            </g>
+          </svg>
+          <div class="lakki-emoji">🎓</div>
+        </div>
+      </div>
+
+      <div class="p1-hint">✦ &nbsp; selaa sivuja alla olevilla nuolilla &nbsp; ✦</div>
+    </div>
+  </div>
+
+  <!-- ══ SIVU 2: KUVA ══ -->
+  <div class="card-page state-next" id="page-1">
+    <div class="p2">
+
+      <!-- Tausta -->
+      <svg class="p2-bg-svg" viewBox="0 0 660 440" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="330" cy="220" r="230" fill="none" stroke="rgba(182,145,0,0.06)" stroke-width="1"/>
+        <circle cx="330" cy="220" r="190" fill="none" stroke="rgba(182,145,0,0.05)" stroke-width="0.8"/>
+        <circle cx="330" cy="220" r="150" fill="none" stroke="rgba(182,145,0,0.04)" stroke-width="1"/>
+        <g stroke="rgba(182,145,0,0.04)" stroke-width="0.5">
+          <line x1="330" y1="0"   x2="330" y2="440"/>
+          <line x1="0"   y1="220" x2="660" y2="220"/>
+          <line x1="167" y1="57"  x2="493" y2="383"/>
+          <line x1="493" y1="57"  x2="167" y2="383"/>
+        </g>
+        <!-- Kulmat -->
+        <line x1="0"   y1="0"   x2="80"  y2="0"   stroke="rgba(182,145,0,0.18)" stroke-width="0.7"/>
+        <line x1="0"   y1="0"   x2="0"   y2="80"  stroke="rgba(182,145,0,0.18)" stroke-width="0.7"/>
+        <line x1="660" y1="0"   x2="580" y2="0"   stroke="rgba(182,145,0,0.18)" stroke-width="0.7"/>
+        <line x1="660" y1="0"   x2="660" y2="80"  stroke="rgba(182,145,0,0.18)" stroke-width="0.7"/>
+        <line x1="0"   y1="440" x2="80"  y2="440" stroke="rgba(182,145,0,0.18)" stroke-width="0.7"/>
+        <line x1="0"   y1="440" x2="0"   y2="360" stroke="rgba(182,145,0,0.18)" stroke-width="0.7"/>
+        <line x1="660" y1="440" x2="580" y2="440" stroke="rgba(182,145,0,0.18)" stroke-width="0.7"/>
+        <line x1="660" y1="440" x2="660" y2="360" stroke="rgba(182,145,0,0.18)" stroke-width="0.7"/>
+        <circle cx="0"   cy="0"   r="3" fill="rgba(182,145,0,0.3)"/>
+        <circle cx="660" cy="0"   r="3" fill="rgba(182,145,0,0.3)"/>
+        <circle cx="0"   cy="440" r="3" fill="rgba(182,145,0,0.3)"/>
+        <circle cx="660" cy="440" r="3" fill="rgba(182,145,0,0.3)"/>
+      </svg>
+
+      <!-- Vasen sivuteksti -->
+      <div class="p2-side p2-side-left">
+        <div class="p2-dot-line"></div>
+        <div class="p2-star-deco">✦</div>
+        <div class="p2-vertical-text">Ylioppilas</div>
+        <div class="p2-star-deco">✦</div>
+        <div class="p2-dot-line"></div>
+      </div>
+
+      <!-- Kuva + kehys -->
+      <div class="photo-frame">
+        <img class="photo-img" src="image/IMG_3337.JPG" alt="Katja">
+          <p>Lisää kuva:<br>src="kuva.jpg"</p>
+        </div>
+
+        <!-- Koristekehys kuvan ympärillä -->
+        <svg class="photo-deco" viewBox="0 0 304 364" xmlns="http://www.w3.org/2000/svg" fill="none">
+          <!-- Ulompi kehys -->
+          <rect x="2" y="2" width="300" height="360" rx="6"
+                stroke="rgba(182,145,0,0.55)" stroke-width="1"/>
+          <!-- Sisempi kehys -->
+          <rect x="10" y="10" width="284" height="344" rx="4"
+                stroke="rgba(182,145,0,0.25)" stroke-width="0.6"/>
+          <!-- Kulmakoristeet -->
+          <g stroke="#b69100" stroke-width="1.2" stroke-linecap="round">
+            <!-- vasen ylä -->
+            <line x1="2"   y1="30"  x2="2"   y2="2"  />
+            <line x1="2"   y1="2"   x2="30"  y2="2"  />
+            <line x1="18"  y1="18"  x2="2"   y2="2"  stroke-width="0.5" opacity="0.4"/>
+            <!-- oikea ylä -->
+            <line x1="302" y1="30"  x2="302" y2="2"  />
+            <line x1="302" y1="2"   x2="274" y2="2"  />
+            <line x1="286" y1="18"  x2="302" y2="2"  stroke-width="0.5" opacity="0.4"/>
+            <!-- vasen ala -->
+            <line x1="2"   y1="332" x2="2"   y2="362"/>
+            <line x1="2"   y1="362" x2="30"  y2="362"/>
+            <line x1="18"  y1="346" x2="2"   y2="362" stroke-width="0.5" opacity="0.4"/>
+            <!-- oikea ala -->
+            <line x1="302" y1="332" x2="302" y2="362"/>
+            <line x1="302" y1="362" x2="274" y2="362"/>
+            <line x1="286" y1="346" x2="302" y2="362" stroke-width="0.5" opacity="0.4"/>
+          </g>
+          <!-- Yläkoristeet -->
+          <g fill="rgba(182,145,0,0.6)">
+            <circle cx="152" cy="4"   r="2.5"/>
+            <circle cx="138" cy="4"   r="1.5"/>
+            <circle cx="166" cy="4"   r="1.5"/>
+          </g>
+          <!-- Alakoristeet -->
+          <g fill="rgba(182,145,0,0.6)">
+            <circle cx="152" cy="360" r="2.5"/>
+            <circle cx="138" cy="360" r="1.5"/>
+            <circle cx="166" cy="360" r="1.5"/>
+          </g>
+          <!-- Sivukoristeet -->
+          <g fill="rgba(182,145,0,0.45)">
+            <circle cx="4"   cy="182" r="2"/>
+            <circle cx="300" cy="182" r="2"/>
+          </g>
+          <!-- Kulmahelmitähdet -->
+          <g fill="rgba(182,145,0,0.5)" font-size="10">
+            <text x="148" y="8" text-anchor="middle" font-family="serif">✦</text>
+          </g>
+        </svg>
+      </div>
+
+      <!-- Oikea sivuteksti -->
+      <div class="p2-side p2-side-right">
+        <div class="p2-dot-line"></div>
+        <div class="p2-star-deco">✦</div>
+        <div class="p2-vertical-text">Katja · 2026</div>
+        <div class="p2-star-deco">✦</div>
+        <div class="p2-dot-line"></div>
+      </div>
+
+      <!-- Alakaption -->
+      <div class="p2-caption">
+        <div class="p2-caption-name">Katja</div>
+        <div class="p2-caption-sub">Ylioppilas &nbsp;·&nbsp; 2026</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ SIVU 3: VIESTI ══ -->
+  <div class="card-page state-next" id="page-2">
+    <div class="p3">
+
+      <!-- Kulmakoristesvg -->
+      <svg class="p3-corner-svg tl" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" fill="none">
+        <circle cx="0" cy="0" r="150" stroke="#b69100" stroke-width="1"/>
+        <circle cx="0" cy="0" r="110" stroke="#b69100" stroke-width="0.7"/>
+        <circle cx="0" cy="0" r="70"  stroke="#b69100" stroke-width="1"/>
+        <line x1="0" y1="0" x2="160" y2="0"   stroke="#b69100" stroke-width="0.6"/>
+        <line x1="0" y1="0" x2="0"   y2="160" stroke="#b69100" stroke-width="0.6"/>
+        <line x1="0" y1="0" x2="113" y2="113" stroke="#b69100" stroke-width="0.4"/>
+      </svg>
+      <svg class="p3-corner-svg tr" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" fill="none">
+        <circle cx="0" cy="0" r="150" stroke="#b69100" stroke-width="1"/>
+        <circle cx="0" cy="0" r="110" stroke="#b69100" stroke-width="0.7"/>
+        <circle cx="0" cy="0" r="70"  stroke="#b69100" stroke-width="1"/>
+        <line x1="0" y1="0" x2="160" y2="0"   stroke="#b69100" stroke-width="0.6"/>
+        <line x1="0" y1="0" x2="0"   y2="160" stroke="#b69100" stroke-width="0.6"/>
+        <line x1="0" y1="0" x2="113" y2="113" stroke="#b69100" stroke-width="0.4"/>
+      </svg>
+      <svg class="p3-corner-svg bl" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" fill="none">
+        <circle cx="0" cy="0" r="150" stroke="#b69100" stroke-width="1"/>
+        <circle cx="0" cy="0" r="110" stroke="#b69100" stroke-width="0.7"/>
+        <circle cx="0" cy="0" r="70"  stroke="#b69100" stroke-width="1"/>
+        <line x1="0" y1="0" x2="160" y2="0"   stroke="#b69100" stroke-width="0.6"/>
+        <line x1="0" y1="0" x2="0"   y2="160" stroke="#b69100" stroke-width="0.6"/>
+        <line x1="0" y1="0" x2="113" y2="113" stroke="#b69100" stroke-width="0.4"/>
+      </svg>
+      <svg class="p3-corner-svg br" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" fill="none">
+        <circle cx="0" cy="0" r="150" stroke="#b69100" stroke-width="1"/>
+        <circle cx="0" cy="0" r="110" stroke="#b69100" stroke-width="0.7"/>
+        <circle cx="0" cy="0" r="70"  stroke="#b69100" stroke-width="1"/>
+        <line x1="0" y1="0" x2="160" y2="0"   stroke="#b69100" stroke-width="0.6"/>
+        <line x1="0" y1="0" x2="0"   y2="160" stroke="#b69100" stroke-width="0.6"/>
+        <line x1="0" y1="0" x2="113" y2="113" stroke="#b69100" stroke-width="0.4"/>
+      </svg>
+
+      <div class="p3-border"></div>
+
+      <div class="p3-top-deco">
+        <div class="p3-top-line"></div>
+        <div class="p3-top-icon">🎓</div>
+        <div class="p3-top-line right"></div>
+      </div>
+
+      <div class="p3-title">Isot onnittelut Katja!</div>
+      <div class="p3-divider"></div>
+      <p class="p3-message">
+        Nauti täst hetkest ja saavutuksest. Oot tehny tosi hyvää duunii ja sen näkee niist sun saamist ÄLLIST!<br>
+        Toivotan sulle menestyst sun tulevii opintoihin ja työelämään.<br>
+        On ollu kiva nähä miten oot kehittyny ja kasvanu.<br><br>
+        Nauti tästä päivästä ja juhli hyvin.<br>
+        Paljon onnea vielä ylioppilas! ✦
+      </p>
+      <div class="p3-divider"></div>
+      <div class="p3-sign">Sydämellisin onnitteluin, Martin</div>
+
+      <div class="wax-seal" id="wax-seal">🎓</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="nav-row">
+  <button class="nav-btn" id="btn-prev" onclick="navigate(-1)" disabled>← Edellinen</button>
+  <span class="page-label" id="page-label">Sivu 1 / 3</span>
+  <button class="nav-btn" id="btn-next" onclick="navigate(1)">Seuraava →</button>
+</div>
+
+<script>
+// ── TÄHDET ──
+const particlesEl = document.getElementById('particles');
+for (let i = 0; i < 65; i++) {
+  const s = document.createElement('div');
+  s.className = 'star';
+  s.style.cssText = `left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${2+Math.random()*4}s;--del:${Math.random()*5}s;`;
+  particlesEl.appendChild(s);
+}
+
+// ── NAVIGAATIO ──
+let currentPage = 0;
+const totalPages = 3;
+
+function navigate(dir) {
+  const pages = document.querySelectorAll('.card-page');
+  const dots  = document.querySelectorAll('.dot');
+
+  pages[currentPage].className = 'card-page ' + (dir > 0 ? 'state-prev' : 'state-next');
+  dots[currentPage].classList.remove('active');
+  currentPage += dir;
+  pages[currentPage].className = 'card-page state-current';
+  dots[currentPage].classList.add('active');
+
+  document.getElementById('btn-prev').disabled = currentPage === 0;
+  document.getElementById('btn-next').disabled = currentPage === totalPages - 1;
+  document.getElementById('page-label').textContent = `Sivu ${currentPage+1} / ${totalPages}`;
+
+  if (currentPage === totalPages - 1) {
+    document.getElementById('wax-seal').classList.add('visible');
+    setTimeout(launchConfetti, 350);
+  } else {
+    document.getElementById('wax-seal').classList.remove('visible');
+  }
+}
+
+// ── KONFETTI ──
+const canvas = document.getElementById('confetti-canvas');
+const ctx    = canvas.getContext('2d');
+let confettiFired = false;
+
+function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+resize();
+window.addEventListener('resize', resize);
+
+const COLORS = ['#b69100','#d4af37','#f0d060','#fff0a0','#8a6800','#fae090','#e8c840'];
+let pieces = [], animId;
+
+function launchConfetti() {
+  if (confettiFired) return;
+  confettiFired = true;
+  pieces = [];
+  for (let i = 0; i < 110; i++) {
+    pieces.push({
+      x: Math.random() * canvas.width,
+      y: -10 - Math.random() * 120,
+      w: 5 + Math.random() * 9,
+      h: 3 + Math.random() * 5,
+      color: COLORS[Math.floor(Math.random() * COLORS.length)],
+      vx: (Math.random() - 0.5) * 3.5,
+      vy: 2 + Math.random() * 3.5,
+      rot: Math.random() * Math.PI * 2,
+      rotV: (Math.random() - 0.5) * 0.14,
+      alpha: 1
+    });
+  }
+  if (animId) cancelAnimationFrame(animId);
+  draw();
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  let alive = false;
+  for (const p of pieces) {
+    p.x += p.vx; p.y += p.vy; p.vy += 0.06;
+    p.rot += p.rotV;
+    if (p.y > canvas.height * 0.8) p.alpha -= 0.02;
+    if (p.alpha <= 0) continue;
+    alive = true;
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, p.alpha);
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot);
+    ctx.fillStyle = p.color;
+    ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+    ctx.restore();
+  }
+  if (alive) animId = requestAnimationFrame(draw);
+  else ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+</script>
+</body>
+</html>
